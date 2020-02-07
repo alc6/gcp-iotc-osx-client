@@ -17,6 +17,7 @@
 #include <iotc_error.h>
 #include <iotc_jwt.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "commandline.h"
 #include "example_utils.h"
@@ -136,6 +137,10 @@ void on_connection_state_changed(iotc_context_handle_t in_context_handle,
       delayed_publish_task =
           iotc_schedule_timed_task(in_context_handle, publish_function, 5, 15,
                                    /*user_data=*/NULL);
+
+      /* Subscribe to the wildcard topic to receive msg published from the GCP Console */
+      iotc_subscribe(in_context_handle, "/devices/device-sdk-test/commands/#",
+                     IOTC_MQTT_QOS_AT_LEAST_ONCE, on_publish_received, NULL);
       break;
 
     /* IOTC_CONNECTION_STATE_OPEN_FAILED is set when there was a problem
@@ -224,4 +229,27 @@ void publish_function(iotc_context_handle_t context_handle,
   iotc_publish(context_handle, iotc_publish_topic, iotc_publish_message,
                iotc_example_qos,
                /*callback=*/NULL, /*user_data=*/NULL);
+}
+
+void on_publish_received(iotc_context_handle_t in_context_handle,
+                         iotc_sub_call_type_t call_type,
+                         const iotc_sub_call_params_t* const params,
+                         iotc_state_t state, void* user_data) {
+  IOTC_UNUSED(in_context_handle);
+  IOTC_UNUSED(call_type);
+  IOTC_UNUSED(params);
+  IOTC_UNUSED(state);
+  IOTC_UNUSED(user_data);
+
+  if (call_type == IOTC_SUB_CALL_MESSAGE)
+  {
+    iotc_sub_call_params_t rxMsg;
+    char string[128];
+    memset(string, 0, 128);
+
+    rxMsg = *params;
+    memcpy(string, rxMsg.message.temporary_payload_data, rxMsg.message.temporary_payload_data_length);
+
+    printf("received msg \"%s\" on topic \"%s\"\n", string, rxMsg.message.topic);
+  }
 }

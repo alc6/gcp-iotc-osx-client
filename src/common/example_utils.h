@@ -78,3 +78,9 @@ void on_connection_state_changed(iotc_context_handle_t in_context_handle,
    event system on a 5 second interval. */
 void publish_function(iotc_context_handle_t context_handle,
                       iotc_timed_task_handle_t timed_task, void* user_data);
+
+/* Callback function when receiving a message (wildcard) */
+void on_publish_received(iotc_context_handle_t in_context_handle,
+                         iotc_sub_call_type_t call_type,
+                         const iotc_sub_call_params_t* const params,
+                         iotc_state_t state, void* user_data);
