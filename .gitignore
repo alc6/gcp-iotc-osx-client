@@ -1,0 +1,9 @@
+#Remove OSX related files
+*.DS_Store
+main.dSYM
+#Remove pub and pv keys
+*.pem 
+
+#Ignore build folder
+build/*
+bin/*
