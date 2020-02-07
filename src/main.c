@@ -23,8 +23,8 @@
  */
 
 #include <iotc.h>
-#include "common/src/commandline.h"
-#include "common/src/example_utils.h"
+#include "common/commandline.h"
+#include "common/example_utils.h"
 
 #include <iotc_error.h>
 #include <iotc_jwt.h>
