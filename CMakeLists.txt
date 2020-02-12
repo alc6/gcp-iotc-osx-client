@@ -135,3 +135,9 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy
                 ${CMAKE_SOURCE_DIR}/build/osx_gcp_iot_client
                 ${CMAKE_SOURCE_DIR}/bin/osx_gcp_iot_client)
+#Copy root.pem
+add_custom_command(
+        TARGET osx_gcp_iot_client POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${GOOGLE_IOT_SDK}/res/trusted_RootCA_certs/roots.pem
+        ${CMAKE_SOURCE_DIR}/bin/roots.pem)
