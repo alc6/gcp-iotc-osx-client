@@ -50,7 +50,7 @@ set (COMPONENT_ADD_INCLUDEDIRS
         "${GOOGLE_IOT_SDK}/src/libiotc"
         "${GOOGLE_IOT_SDK}/third_party/mqtt-protocol-c"
         "${GOOGLE_IOT_SDK}/third_party/tls/mbedtls/include"
-        "${GOOGLE_IOT_SDK}/examples/"
+        "${CMAKE_CURRENT_LIST_DIR}/src/"
     )
 # 1.a Set variables (sources)
 set (SOURCES
@@ -103,8 +103,9 @@ set (SOURCES
         iot-device-sdk-embedded-c/third_party/mqtt-protocol-c/iotc_mqtt_message.c
         iot-device-sdk-embedded-c/third_party/mqtt-protocol-c/iotc_mqtt_parser.c
         iot-device-sdk-embedded-c/third_party/mqtt-protocol-c/iotc_mqtt_serialiser.c
-        iot-device-sdk-embedded-c/examples/common/src/commandline.c
-        iot-device-sdk-embedded-c/examples/common/src/example_utils.c
+
+        ${CMAKE_CURRENT_LIST_DIR}/src/common/commandline.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/common/example_utils.c
     )
 
 #2. Include directories
@@ -122,7 +123,7 @@ add_definitions(-D IOTC_FS_POSIX
 
         
 
-add_executable(osx_gcp_iot_client ${SOURCES} main.c)
+add_executable(osx_gcp_iot_client ${SOURCES} src/main.c)
 
 target_link_libraries(osx_gcp_iot_client ${libs})
 
@@ -134,3 +135,9 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy
                 ${CMAKE_SOURCE_DIR}/build/osx_gcp_iot_client
                 ${CMAKE_SOURCE_DIR}/bin/osx_gcp_iot_client)
+#Copy root.pem
+add_custom_command(
+        TARGET osx_gcp_iot_client POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${GOOGLE_IOT_SDK}/res/trusted_RootCA_certs/roots.pem
+        ${CMAKE_SOURCE_DIR}/bin/roots.pem)
