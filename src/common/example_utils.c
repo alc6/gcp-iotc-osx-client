@@ -16,6 +16,7 @@
 
 #include <iotc_error.h>
 #include <iotc_jwt.h>
+#include <iotc_fs_header.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -75,8 +76,16 @@ int iotc_example_handle_command_line_args(int argc, char* argv[]) {
 
 int load_ec_private_key_pem_from_posix_fs(char* buf_ec_private_key_pem,
                                           size_t buf_len) {
-  FILE* fp = fopen(iotc_private_key_filename, "rb");
-  if (fp == NULL) {
+
+  iotc_fs_resource_handle_t resource_handle = iotc_fs_init_resource_handle();
+  iotc_state_t res = IOTC_STATE_OK;
+
+  res = iotc_fs_open(NULL, IOTC_FS_CERTIFICATE,
+                    iotc_private_key_filename,
+                    IOTC_FS_OPEN_READ, &resource_handle);
+
+  if (resource_handle == NULL)
+  {
     printf("ERROR!\n");
     printf(
         "\tMissing Private Key required for JWT signing.\n"
@@ -86,8 +95,10 @@ int load_ec_private_key_pem_from_posix_fs(char* buf_ec_private_key_pem,
         "\tAlternatively use the --help command line parameter to learn\n"
         "\thow to set a path to your file using command line arguments\n",
         iotc_private_key_filename);
-    return -1;
+        return -1;
   }
+
+  FILE* fp = (FILE*) resource_handle;
 
   fseek(fp, 0, SEEK_END);
   long file_size = ftell(fp);
