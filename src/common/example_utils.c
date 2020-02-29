@@ -16,6 +16,7 @@
 
 #include <iotc_error.h>
 #include <iotc_jwt.h>
+#include <iotc_fs_header.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -75,8 +76,16 @@ int iotc_example_handle_command_line_args(int argc, char* argv[]) {
 
 int load_ec_private_key_pem_from_posix_fs(char* buf_ec_private_key_pem,
                                           size_t buf_len) {
-  FILE* fp = fopen(iotc_private_key_filename, "rb");
-  if (fp == NULL) {
+
+  iotc_fs_resource_handle_t resource_handle = iotc_fs_init_resource_handle();
+  iotc_state_t res = IOTC_STATE_OK;
+
+  res = iotc_fs_open(NULL, IOTC_FS_CERTIFICATE,
+                    iotc_private_key_filename,
+                    IOTC_FS_OPEN_READ, &resource_handle);
+
+  if (res == IOTC_FS_RESOURCE_NOT_AVAILABLE)
+  {
     printf("ERROR!\n");
     printf(
         "\tMissing Private Key required for JWT signing.\n"
@@ -86,29 +95,36 @@ int load_ec_private_key_pem_from_posix_fs(char* buf_ec_private_key_pem,
         "\tAlternatively use the --help command line parameter to learn\n"
         "\thow to set a path to your file using command line arguments\n",
         iotc_private_key_filename);
-    return -1;
+        return -1;
   }
 
-  fseek(fp, 0, SEEK_END);
-  long file_size = ftell(fp);
-  rewind(fp);
+  iotc_fs_stat_t file_size;
+  memset(&file_size, 0, sizeof(iotc_fs_stat_t));
 
-  if ((size_t)file_size > buf_len) {
+  res = iotc_fs_stat(NULL, IOTC_FS_CERTIFICATE, iotc_private_key_filename, &file_size);
+
+  if (file_size.resource_size > buf_len) {
     printf(
         "private key file size of %lu bytes is larger that certificate buffer "
         "size of %lu bytes\n",
-        file_size, (long)buf_len);
-    fclose(fp);
+        file_size.resource_size, (long)buf_len);
+    iotc_fs_close(NULL, resource_handle);
+    return -1;
+  }
+  
+  /* this buffer will point to a memory chunk allocated by the iotc in a list (see iotc_bsp_io_fs_posix.c line 200) */
+  const uint8_t * buffer = NULL; 
+  res = iotc_fs_read(NULL, resource_handle, 0, &buffer, &file_size.resource_size);
+
+  if (res != IOTC_STATE_OK)
+  {
+    printf("error %d while reading %s file\n", (int) res, iotc_private_key_filename);
     return -1;
   }
 
-  long bytes_read = fread(buf_ec_private_key_pem, 1, file_size, fp);
-  fclose(fp);
-
-  if (bytes_read != file_size) {
-    printf("could not fully read private key file\n");
-    return -1;
-  }
+  /* in case of success, copy the buffer pointed in buf_ec_private_key_pem */ 
+  memcpy(buf_ec_private_key_pem, (uint8_t*) buffer, file_size.resource_size);
+  iotc_fs_close(NULL, resource_handle);
 
   return 0;
 }
