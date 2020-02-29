@@ -127,7 +127,7 @@ add_executable(osx_gcp_iot_client ${SOURCES} src/main.c)
 
 target_link_libraries(osx_gcp_iot_client ${libs})
 
-configure_file(build/osx_gcp_iot_client bin/osx_gcp_iot_client COPYONLY)
+#configure_file(build/osx_gcp_iot_client bin/osx_gcp_iot_client COPYONLY)
 
 #Move the executable from build to bin for a clearer file organization
 add_custom_command(
