@@ -84,7 +84,7 @@ int load_ec_private_key_pem_from_posix_fs(char* buf_ec_private_key_pem,
                     iotc_private_key_filename,
                     IOTC_FS_OPEN_READ, &resource_handle);
 
-  if (resource_handle == NULL)
+  if (res == IOTC_FS_RESOURCE_NOT_AVAILABLE)
   {
     printf("ERROR!\n");
     printf(
@@ -98,28 +98,33 @@ int load_ec_private_key_pem_from_posix_fs(char* buf_ec_private_key_pem,
         return -1;
   }
 
-  FILE* fp = (FILE*) resource_handle;
+  iotc_fs_stat_t file_size;
+  memset(&file_size, 0, sizeof(iotc_fs_stat_t));
 
-  fseek(fp, 0, SEEK_END);
-  long file_size = ftell(fp);
-  rewind(fp);
+  res = iotc_fs_stat(NULL, IOTC_FS_CERTIFICATE, iotc_private_key_filename, &file_size);
 
-  if ((size_t)file_size > buf_len) {
+  if (file_size.resource_size > buf_len) {
     printf(
         "private key file size of %lu bytes is larger that certificate buffer "
         "size of %lu bytes\n",
-        file_size, (long)buf_len);
-    fclose(fp);
+        file_size.resource_size, (long)buf_len);
+    iotc_fs_close(NULL, resource_handle);
+    return -1;
+  }
+  
+  /* this buffer will point to a memory chunk allocated by the iotc in a list (see iotc_bsp_io_fs_posix.c line 200) */
+  const uint8_t * buffer = NULL; 
+  res = iotc_fs_read(NULL, resource_handle, 0, &buffer, &file_size.resource_size);
+
+  if (res != IOTC_STATE_OK)
+  {
+    printf("error %d while reading %s file\n", (int) res, iotc_private_key_filename);
     return -1;
   }
 
-  long bytes_read = fread(buf_ec_private_key_pem, 1, file_size, fp);
-  fclose(fp);
-
-  if (bytes_read != file_size) {
-    printf("could not fully read private key file\n");
-    return -1;
-  }
+  /* in case of success, copy the buffer pointed in buf_ec_private_key_pem */ 
+  memcpy(buf_ec_private_key_pem, (uint8_t*) buffer, file_size.resource_size);
+  iotc_fs_close(NULL, resource_handle);
 
   return 0;
 }
